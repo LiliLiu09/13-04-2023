@@ -1,0 +1,73 @@
+import pandas as pd
+import os
+
+# Load cleaned crime data
+crime_df = pd.read_csv('crime_cleaned.csv')
+
+# Create DimDate table
+dim_date_df = pd.DataFrame()
+dim_date_df['DateKey'] = " "
+dim_date_df['date'] = crime_df['date']
+dim_date_df['quarter'] = crime_df['quarter']
+dim_date_df['month'] = crime_df['month']
+dim_date_df['year'] = crime_df['year']
+dim_date_df = dim_date_df.drop_duplicates().reset_index(drop=True)
+# Reorder columns and save as CSV
+dim_date_df.to_csv('DimDate.csv', index=False, header=False)
+
+# Create DimBeat table
+dim_beat_df = pd.DataFrame()
+dim_beat_df['BeatKey'] = " "
+dim_beat_df['BeatName'] = crime_df['beat'].unique()
+dim_beat_df['ZoneKey'] = crime_df['zone'].map(dim_zone_df.set_index('ZoneName')['ZoneKey'])
+dim_beat_df['CountyKey'] = crime_df['county'].map(dim_county_df.set_index('CountyName')['CountyKey'])
+dim_beat_df['CityName'] = crime_df['city']
+dim_beat_df.to_csv('DimBeat.csv', index=False, header=False)
+
+dim_beat_df = pd.DataFrame()
+dim_beat_df['BeatKey'] = " "
+dim_beat_df['beat'] = crime_df['beat']
+dim_beat_df['zone'] = crime_df['zone']
+dim_beat_df['county'] = crime_df['county']
+dim_beat_df['city'] = crime_df['city']
+dim_beat_df = dim_beat_df.drop_duplicates().reset_index(drop=True)
+dim_beat_df.to_csv('DimBeat.csv', index=False, header=False)
+# Create DimLocationbyNPU table
+dim_location_by_npu_df = pd.DataFrame()
+dim_location_by_npu_df['NPUKey'] = " "
+dim_location_by_npu_df['npu'] = crime_df['npu']
+dim_location_by_npu_df = dim_location_by_npu_df.drop_duplicates().reset_index(drop=True)
+dim_location_by_npu_df.to_csv('DimLocationbyNPU.csv', index=False, header=False)
+
+# Create DimLocationbyNeighborhood table
+dim_location_by_neighborhood_df = pd.DataFrame()
+dim_location_by_neighborhood_df['NeighborhoodKey'] = " "
+dim_location_by_neighborhood_df['neighborhood'] = crime_df['neighborhood']
+dim_location_by_neighborhood_df = dim_location_by_neighborhood_df.drop_duplicates().reset_index(drop=True)
+dim_location_by_neighborhood_df.to_csv('DimLocationbyNeighborhood.csv', index=False, header=False)
+# Create DimCrimeType table
+dim_crime_type_df = pd.DataFrame()
+dim_crime_type_df['CrimeTypeKey'] = " "
+dim_crime_type_df['crime_type'] = crime_df['crime_type']
+dim_crime_type_df = dim_crime_type_df.drop_duplicates().reset_index(drop=True)
+dim_crime_type_df.to_csv('DimCrimeType.csv', index=False, header=False)
+# Create DimLocationType table
+dim_location_type_df = pd.DataFrame()
+dim_location_type_df['CrimeLocationTypeKey'] = " "
+dim_location_type_df['crime_location_type'] = crime_df['type']
+dim_location_type_df = dim_location_type_df.drop_duplicates().reset_index(drop=True)
+dim_location_type_df.to_csv('DimLocationType.csv', index=False, header=False)
+
+# Join the dimension tables with the FactCrime table
+fact_crime_df = pd.DataFrame()
+fact_crime_df = fact_crime_df[['number', 'DateKey', 'CrimeTypeKey', 'BeatKey', 'NeighborhoodKey', 'NPUKey', 'CrimeLocationTypeKey']]
+fact_crime_df = fact_crime_df.merge(dim_date_df, on='date', how='left')
+fact_crime_df = fact_crime_df.merge(dim_crime_type_df, on='crime_type', how='left')
+fact_crime_df = fact_crime_df.merge(dim_beat_df, on='beat', how='left')
+fact_crime_df = fact_crime_df.merge(dim_location_by_neighborhood_df, on='neighborhood', how='left')
+fact_crime_df = fact_crime_df.merge(dim_location_by_npu_df, on='npu', how='left')
+fact_crime_df = fact_crime_df.merge(dim_location_type_df, on='type', how='left')
+
+# Reorder columns and save as CSV
+
+fact_crime_df.to_csv('FactCrime.csv', index=False, header=False)
